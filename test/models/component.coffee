@@ -32,7 +32,20 @@ makeMockingbird = ->
   w.in.to a.op
   w.out.from a.out
   w
-  
+
+makeKestrel = ->
+  k = new Combinator
+  box = new Combinator
+  k.in.to box.out
+  box.out.to k.out
+  k
+
+makeKite = ->
+  kite = new Combinator
+  box = new Combinator
+  box.in.to box.out
+  box.out.to kite.out
+  kite
 
 describe 'Nodes', ->
   it 'should connect to other nodes', ->
@@ -56,7 +69,22 @@ describe 'Nodes', ->
     n2.from n1
     
     expect(n1._to).to.include n2
-  
+
+  it 'should be able to remove to connections', ->
+    n1 = new Node
+    n2 = new Node
+    n3 = new Node
+
+    n1.to n2
+    n1.removeTo n2
+    n1.to n3
+
+    expect(n1._to).to.include n3
+    expect(n1._to).not.to.include n2
+    expect(n1._to).to.have.length 1
+
+    expect(n1._from).to.be.null
+    
   describe 'connection search', ->
     it 'should return a list of one node when not connected', ->
       n = new Node
@@ -173,11 +201,79 @@ describe 'Components', ->
     expect(allNodes).to.include outer.out
     expect(allNodes).to.have.length 7
 
-  it 'should have a list of components', ->
+  it 'should have a hash of components', ->
     components = @b.components()
-    expect(components).to.include @b
-    expect(components).to.include @a
-    expect(components).to.have.length 2
+    expect(components[@b.id]).to.equal @b
+    expect(components[@a.id]).to.equal @a
+    expect(_.keys(components)).to.have.length 2
+
+  it 'should be able to create a new component of the same type', ->
+    newB = @b.newComponent()
+    expect(newB.in).to.exist
+    expect(newB.out).to.exist
+    expect(newB.op).not.to.exist
+
+  describe 'composition/reduction', ->
+    it 'should find the terminal component', ->
+      i = makeIdiotBird()
+      w = makeMockingbird()
+      i.out.to w.in
+
+      terminal = i.terminalComponent()
+      expect(terminal).to.equal w
+
+    it 'should compose I and get itself', ->
+      i = makeIdiotBird()
+
+      result = i.reduce()
+
+      expect(Structure.match(result, makeIdiotBird())).to.be.true
+
+    it 'should compose II and get I', ->
+      i1 = makeIdiotBird()
+      i2 = makeIdiotBird()
+
+      i1.out.to i2.in
+
+      result = i2.reduce()
+      expect(Structure.match(result, makeIdiotBird())).to.be.true
+
+    it 'should compose wI and get I', ->
+      i = makeIdiotBird()
+      w = makeMockingbird()
+      i.out.to w.in
+
+      result = w.reduce()
+      expect(Structure.match(result, makeIdiotBird())).to.be.true
+
+    it 'should compose KI and get Kite', ->
+      k = makeKestrel()
+      i = makeIdiotBird()
+      i.out.to k.in
+
+      result = k.reduce()
+      expect(Structure.match(result, makeKite())).to.be.true
+
+    it 'should compose a (Kite)w and get an I', ->
+      kite = makeKite()
+      w = makeMockingbird()
+      w.out.to kite.in
+
+      result = kite.reduce()
+      expect(Structure.match(result, makeIdiotBird())).to.be.true
+
+    it 'should compose (Kw)KI and get a w', ->
+      k = makeKestrel()
+      w = makeMockingbird()
+      ki = makeKite()
+
+      w.out.to k.in
+      kw = k.reduce()
+
+      ki.out.to kw.in
+      result = kw.reduce()
+
+      expect(Structure.match(result, makeMockingbird())).to.be.true
 
 describe 'Structure', ->
   beforeEach ->
@@ -252,3 +348,17 @@ describe 'Structure', ->
 
     kitesMatch = Structure.match(kite1, kite2)
     expect(kitesMatch).to.be.true
+
+  it 'should say a figure has the same structure as itself', ->
+    kite = makeKite()
+    expect(Structure.match(kite, kite)).to.be.true
+
+  it "should be able to copy a figure's structure", ->
+    mockingbird = makeMockingbird()
+
+    mockingbird2 = Structure.copy(mockingbird)
+
+    for component in mockingbird2.components()
+      expect(mockingbird.components()).not.to.include component
+
+    expect(Structure.match(mockingbird, mockingbird2)).to.be.true
