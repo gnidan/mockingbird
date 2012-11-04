@@ -1,0 +1,19 @@
+{
+  "dependencies": [
+    "underscore",
+    "jqueryify2"
+  ],
+
+  "main": "./app/index",
+
+  "css": "./css/index",
+
+  "public": "./public",
+
+  "paths": ["./app"],
+
+  "libs": [],
+
+  "compilers": {
+  }
+}

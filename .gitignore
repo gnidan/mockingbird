@@ -1,0 +1,4 @@
+node_modules/
+public/application.*
+public/images/ui-*
+tags
