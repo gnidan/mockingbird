@@ -111,10 +111,10 @@ class Component
         return c
 
   reduce: ->
-    return
+    return this
   
   newComponent: ->
-    return
+    return null
 
   _compare: (other, seenBefore) ->
     for node in @nodes()
