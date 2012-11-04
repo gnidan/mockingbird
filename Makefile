@@ -1,7 +1,7 @@
 MOCHA = @./node_modules/.bin/mocha \
 	--compilers coffee:coffee-script
 
-OPTS?=''
+OPTS?=
 FILES?=`find ./test -type f -name '*.coffee'`
 export NODE_PATH=./app
 
