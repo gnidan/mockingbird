@@ -50,25 +50,6 @@ class Node
 
     return newNodes
 
-  _compare: (other, seenBefore) ->
-    from = @_compareFrom(other, seenBefore)
-    return from
-    
-    # check to
-
-  _compareFrom: (other, seenBefore) ->
-    if @_from in seenBefore
-      return true
-
-    if @_from? and not other._from? or other._from? and not @_from?
-      return false
-    else if @_from == null
-      return true
-
-    seenBefore.push @_from
-    @_from.component._compare(other._from.component, seenBefore)
-
-
 class Component
   # ID generation class stuff
   @_lastId = 500
@@ -110,21 +91,23 @@ class Component
       if c.out._to.length == 0
         return c
 
+  replication: ->
+    for type, node of @nodes()
+      sourceNode = node._from
+      if sourceNode? and sourceNode._to.length > 1
+        sourceNode.removeTo node
+        Structure.copy(sourceNode.component).out.to node
+          
+        return {
+          terminal: this
+          type: 'replication'
+        }
+
   reduce: ->
     return this
   
   newComponent: ->
     return null
-
-  _compare: (other, seenBefore) ->
-    for node in @nodes()
-      mine = this[node]
-      theirs = other[node]
-
-      if mine._compare(theirs, seenBefore) == false
-        return false
-
-    return true
 
 class Applicator extends Component
   _nodes: ['in', 'op', 'out']
@@ -167,6 +150,26 @@ class Combinator extends Component
 
   newComponent: ->
     new Combinator
+
+  betaReduction: ->
+    leftside = @in._from?.component
+
+    if leftside?
+      leftside.out.removeTo(@in)
+
+      for node in @in._to
+        leftside.out.to node
+
+      outFrom = @out._from
+      outFrom.removeTo(@out)
+
+      for node in @out._to
+        outFrom.to node
+
+      return {
+        terminal: outFrom.component
+        type: 'beta-reduction'
+      }
 
   reduce: ->
     leftside = @in._from?.component
