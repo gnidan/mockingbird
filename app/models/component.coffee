@@ -115,6 +115,21 @@ class Applicator extends Component
   newComponent: ->
     new Applicator
 
+  substitution: ->
+    operand = @in._from?.component
+    operator = @op._from?.component
+
+    if operand? and operator?
+      operand.out.removeTo(@in)
+      operator.out.removeTo(@op)
+
+      operator.in.from operand.out
+
+      return {
+        terminal: operator
+        type: 'substitution'
+      }
+
   reduce: ->
     leftside = @in._from?.component
     topside = @op._from?.component
@@ -201,6 +216,29 @@ class Structure
     for id, component of figure.components()
       structure[id] = Structure._componentStructure(component)
     structure
+
+  @stringForFigure: (figure) ->
+    structure = Structure.forFigure(figure)
+    result = []
+    for id, componentStructure of structure
+      result.push "#{id}:"
+      for type, nodeStructure of componentStructure
+        result.push "  #{type}:"
+
+        if nodeStructure.from
+          connection = Structure._stringForConnection(nodeStructure.from)
+          result.push "    from: #{connection}"
+        if nodeStructure.to
+          connections = []
+          for connection in nodeStructure.to
+            connStr = Structure._stringForConnection(connection)
+            connections.push connStr
+          result.push "    to: [#{connections.join(', ')}]"
+
+    "#{result.join('\n')}\n"
+
+  @_stringForConnection: (connection) ->
+    "<#{connection[0]}, #{connection[1]}>"
 
   @match: (figure, archetype) ->
     fStructure = Structure.forFigure(figure)

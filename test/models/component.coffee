@@ -189,6 +189,46 @@ describe 'Structure', ->
 
     expect(structure).to.deep.equal expected
 
+  it 'should have a string representation for a connection', ->
+    connection = [511, 'out']
+    expect(Structure._stringForConnection(connection)).to.equal "<511, out>"
+
+  it 'should be able to print the structure in a readable form', ->
+    left = makeIdiotBird()
+
+    right = new Combinator
+    appl = new Applicator
+    right.in.to appl.in
+    right.in.to appl.op
+    appl.out.to right.out
+
+    left.out.to right.in
+
+    str = Structure.stringForFigure(left)
+
+    expected = "#{left.id}:\n
+  in:\n
+    to: [<#{left.id}, out>]\n
+  out:\n
+    from: <#{left.id}, in>\n
+    to: [<#{right.id}, in>]\n
+#{right.id}:\n
+  in:\n
+    from: <#{left.id}, out>\n
+    to: [<#{appl.id}, in>, <#{appl.id}, op>]\n
+  out:\n
+    from: <#{appl.id}, out>\n
+#{appl.id}:\n
+  in:\n
+    from: <#{right.id}, in>\n
+  op:\n
+    from: <#{right.id}, in>\n
+  out:\n
+    to: [<#{right.id}, out>]\n"
+
+    expect(str).to.equal expected
+
+
   it 'should be able to tell if two figures have the same structure', ->
     # check against some generators
     mystery = new Combinator
@@ -405,6 +445,42 @@ describe 'Components', ->
       expect(newIdiot.out._to).to.include a2.op
       expect(left.out._to).not.to.include a2.op
       expect(left.out._to).to.have.length 2
+
+  describe 'substitution', ->
+    it 'should substitute the operator for applicators', ->
+      #      ______   
+      #     |      |
+      #     +------+---. 
+      #     |______|   |
+      #     ______     |
+      #    |      |    |
+      #    +------+----o---+
+      #    |______|    
+      #          .
+      #          .
+      #          V
+      #     ______    ______
+      #    |      |  |      |
+      #    +------+--+------+
+      #    |______|  |______|
+
+      operand = makeIdiotBird()
+      operator = makeIdiotBird()
+      appl = new Applicator
+
+      operand.out.to appl.in
+      operator.out.to appl.op
+
+      result = appl.substitution()
+
+      expect(operand.out._to).to.include operator.in
+      expect(operand.out._to).to.have.length 1
+
+      expect(operator.out._to).to.have.length 0
+
+      expect(result.terminal).to.equal operator
+      expect(result.type).to.equal 'substitution'
+      
 
   describe 'composition/reduction', ->
     it 'should find the terminal component', ->
