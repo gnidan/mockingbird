@@ -256,6 +256,14 @@ describe 'Structure', ->
     kitesMatch = Structure.match(kite1, kite2)
     expect(kitesMatch).to.be.true
 
+  it 'should find the terminal component', ->
+    i = makeIdiotBird()
+    w = makeMockingbird()
+    i.out.to w.in
+
+    terminal = i.terminalComponent()
+    expect(terminal).to.equal w
+
   it 'should say a figure has the same structure as itself', ->
     kite = makeKite()
     expect(Structure.match(kite, kite)).to.be.true
@@ -340,6 +348,56 @@ describe 'Components', ->
     expect(newB.out).to.exist
     expect(newB.op).not.to.exist
 
+  describe 'siblings', ->
+    it 'should be components reachable by "out to" or "in/op from" conn.', ->
+      #     __________
+      #    |   ,---.  |
+      #    |  ,-.  |  |
+      #    +-'--o--o--+
+      #    |__________|
+      b = new Combinator
+      a1 = new Applicator
+      a2 = new Applicator
+
+      b.in.to a1.in
+      b.in.to a1.op
+      b.in.to a2.op
+      a1.out.to a2.in
+      a2.out.to b.out
+
+      expect(b.siblings()).to.have.length 0
+      expect(a1.siblings()).to.equal [a2]
+      expect(a2.siblings()).to.equal [a1]
+
+  describe 'interior components', ->
+    it 'should say applicators have 0 interior components', ->
+      expect(@a.immediatelyInteriorComponents()).to.have.length 0
+
+    it 'should calculate immediately interior components', ->
+      components = @b.immediatelyInteriorComponents()
+      
+      expect(components).to.include @a
+      expect(components).to.have.length 1
+
+      box = new Combinator
+      subbox = new Combinator
+      a1 = new Combinator
+      a2 = new Combinator
+
+      subbox.in.to a1.in
+      subbox.in.to a1.op
+      
+      subbox.out.to a2.in
+      box.in.to a2.op
+      a2.out.to box.out
+
+      components = box.immediatelyInteriorComponents()
+
+      expect(components).to.include subbox
+      expect(components).to.include a2
+      expect(components).not.to.include a1
+      expect(components).to.have.lenght 2
+
   describe 'beta reduction', ->
     it 'should perform beta-reduction on combinators', ->
       #  ______     _______
@@ -375,7 +433,7 @@ describe 'Components', ->
 
       expect(appl.out._to).to.have.length 0
 
-      expect(result.terminal).to.equal appl
+      expect(result.component).to.equal appl
       expect(result.type).to.equal 'beta-reduction'
 
   describe 'replication', ->
@@ -409,7 +467,7 @@ describe 'Components', ->
       expect(inComponent).not.to.equal opComponent
       expect(Structure.match(inComponent, opComponent)).to.be.true
 
-      expect(result.terminal).to.equal appl
+      expect(result.component).to.equal appl
       expect(result.type).to.equal 'replication'
 
     it 'should copy out specifically the most terminal node connection', ->
@@ -478,20 +536,34 @@ describe 'Components', ->
 
       expect(operator.out._to).to.have.length 0
 
-      expect(result.terminal).to.equal operator
+      expect(result.component).to.equal operator
       expect(result.type).to.equal 'substitution'
-      
 
-  describe 'composition/reduction', ->
-    it 'should find the terminal component', ->
-      i = makeIdiotBird()
-      w = makeMockingbird()
-      i.out.to w.in
+  describe 'reduction', ->
+    it 'should be (graphically) left associative', ->
+      a = makeMockingbird()
+      b = makeMockingbird()
+      c = makeMockingbird()
+      a.out.to b.in
+      b.out.to c.in
 
-      terminal = i.terminalComponent()
-      expect(terminal).to.equal w
+      result = a.reduceOnce()
 
+      expect(a.out._to).not.to.include b.in
 
+      expect(result.type).to.equal 'beta-reduction'
+
+    it 'should reduce III to II', ->
+      i1 = makeIdiotBird()
+      i2 = makeIdiotBird()
+      i3 = makeIdiotBird()
+
+      i1.out.to i2.in
+      i2.out.to i3.in
+
+      result = i3.reduceOnce()
+
+      expect(result.type).to.equal 'beta-reduction'
 
     it 'should compose I and get itself', ->
       i = makeIdiotBird()

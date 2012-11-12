@@ -86,6 +86,9 @@ class Component
 
     seen
 
+  siblings: ->
+    []
+
   terminalComponent: ->
     for i, c of @components()
       if c.out._to.length == 0
@@ -99,9 +102,23 @@ class Component
         Structure.copy(sourceNode.component).out.to node
           
         return {
-          terminal: this
+          component: this
           type: 'replication'
         }
+
+  reduceOnce: ->
+    terminalComponent = @terminalComponent()
+
+    return terminalComponent._doReduceOnce()
+
+  _doReduceOnce: ->
+    for type, node of _.omit(@nodes(), 'out')
+      sourceNode = node._from
+      result = sourceNode.component._doReduceOnce() if sourceNode?
+      return result if result?
+
+    result = @replication()
+    return result if result?
 
   reduce: ->
     return this
@@ -126,9 +143,16 @@ class Applicator extends Component
       operator.in.from operand.out
 
       return {
-        terminal: operator
+        component: operator
         type: 'substitution'
       }
+
+  _doReduceOnce: ->
+    result = super()
+    return result if result?
+
+    result = @substitution()
+    return result
 
   reduce: ->
     leftside = @in._from?.component
@@ -159,6 +183,9 @@ class Applicator extends Component
 
     else
       return this
+  
+  immediatelyInteriorComponents: ->
+    []
 
 class Combinator extends Component
   _nodes: ['in', 'out']
@@ -182,9 +209,16 @@ class Combinator extends Component
         outFrom.to node
 
       return {
-        terminal: outFrom.component
+        component: outFrom.component
         type: 'beta-reduction'
       }
+
+  _doReduceOnce: ->
+    result = super()
+    return result if result?
+
+    result = @betaReduction()
+    return result
 
   reduce: ->
     leftside = @in._from?.component
