@@ -84,63 +84,6 @@ describe 'Nodes', ->
     expect(n1._to).to.have.length 1
 
     expect(n1._from).to.be.null
-    
-  describe 'connection search', ->
-    it 'should return a list of one node when not connected', ->
-      n = new Node
-      allNodes = n.allConnectingNodes()
-      expect(allNodes).to.include n
-      expect(allNodes).to.have.length 1
-
-    it 'should find all connecting nodes', ->
-      #       ,--> n2
-      # n1 --+---> n3
-
-      n1 = new Node
-      n2 = new Node
-      n3 = new Node
-
-      n1.to n2
-      n1.to n3
-
-      allNodes = n1.allConnectingNodes()
-      expect(allNodes).to.include n1
-      expect(allNodes).to.include n2
-      expect(allNodes).to.include n3
-      expect(allNodes).to.have.length 3
-
-    it 'should not have duplicates in case of a 2-loop', ->
-      # n1 ---> n2 -,
-      #  ^----------'
-
-      n1 = new Node
-      n2 = new Node
-
-      n1.to n2
-      n2.to n1
-      
-      allNodes = n1.allConnectingNodes()
-      expect(allNodes).to.include n1
-      expect(allNodes).to.include n2
-      expect(allNodes).to.have.length 2
-
-    it 'should not have duplicates in case of a 3-loop', ->
-      # n1 ---> n2 -,
-      #  ^--- n3 <--'
-
-      n1 = new Node
-      n2 = new Node
-      n3 = new Node
-
-      n1.to n2
-      n2.to n3
-      n3.to n1
-      
-      allNodes = n1.allConnectingNodes()
-      expect(allNodes).to.include n1
-      expect(allNodes).to.include n2
-      expect(allNodes).to.include n3
-      expect(allNodes).to.have.length 3
       
 describe 'Structure', ->
   beforeEach ->
@@ -279,7 +222,7 @@ describe 'Structure', ->
     expect(Structure.match(mockingbird, mockingbird2)).to.be.true
 
   describe 'copy', ->
-    it 'should treat the original as a terminal component', ->
+    it 'should only copy components reachable by from connections', ->
       i = makeIdiotBird()
       w = makeMockingbird()
       i.out.to w.in
@@ -313,38 +256,6 @@ describe 'Components', ->
     expect(@b.in.type).to.equal 'in'
     expect(@b.out.type).to.equal 'out'
     expect(@a.op.type).to.equal 'op'
-
-  it 'should have a list of all connecting nodes', ->
-    allNodes = @b.allConnectingNodes()
-    expect(allNodes).to.include @b.in
-    expect(allNodes).to.include @b.out
-    expect(allNodes).to.include @a.in
-    expect(allNodes).to.include @a.op
-    expect(allNodes).to.include @a.out
-    expect(allNodes).to.have.length 5
-
-  it 'should have a list of nodes even if the graph is separated', ->
-    #  _____________
-    # |             |
-    # |   _______   |
-    # |  |  /-.  |  |
-    # +  +-<--o--+--+
-    # |  |_______|  |
-    # |             |
-    # |_____________|
-    #
-    outer = new Combinator
-    @b.out.to outer.out
-
-    allNodes = outer.allConnectingNodes()
-    expect(allNodes).to.include @b.in
-    expect(allNodes).to.include @b.out
-    expect(allNodes).to.include @a.in
-    expect(allNodes).to.include @a.op
-    expect(allNodes).to.include @a.out
-    expect(allNodes).to.include outer.in
-    expect(allNodes).to.include outer.out
-    expect(allNodes).to.have.length 7
 
   it 'should have a hash of components', ->
     components = @b.components()

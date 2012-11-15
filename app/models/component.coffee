@@ -30,26 +30,6 @@ class Node
       
     "<#{@id} from: #{from} to: [#{to}]>"
 
-  allConnectingNodes: (seen = []) ->
-    newNodes = [this]
-
-    if @_from? and @_from not in newNodes.concat(seen)
-      fromConnections = @_from.allConnectingNodes(newNodes.concat(seen))
-      newNodes = newNodes.concat fromConnections
-
-    for to in @_to
-      if to not in newNodes.concat(seen)
-        toConnections = to.allConnectingNodes(newNodes.concat(seen))
-        newNodes = newNodes.concat toConnections
-
-    if @component?
-      for type, node of @component.nodes()
-        unless node in newNodes.concat(seen)
-          otherNodeConnections = node.allConnectingNodes(newNodes.concat(seen))
-          newNodes = newNodes.concat otherNodeConnections
-
-    return newNodes
-
 class Component
   # ID generation class stuff
   @_lastId = 500
@@ -80,15 +60,6 @@ class Component
 
     acc
 
-  allConnectingNodes: ->
-    seen = []
-
-    for type, node of @nodes()
-      unless node in seen
-        seen = seen.concat node.allConnectingNodes(seen)
-
-    seen
-
   components: ->
     f = (component, acc) ->
       acc[component.id] = component
@@ -101,7 +72,7 @@ class Component
 
     parents = (comp, acc) ->
       # find parent that will give component its maximum height
-      # follows 'to' paths: going forward
+      #   - follows 'to' paths: going forward
 
       [p, h] = acc
       if comp.id in p
@@ -109,7 +80,6 @@ class Component
 
       maxHeight = 0
       maxParent = null
-      max = null
       for destNode in comp.out._to
         [newP, newH] = parents(destNode.component, [p, h])
         p = _.defaults(p, newP)
@@ -117,16 +87,17 @@ class Component
 
         if destNode.type is 'out'
           # if the destNode is an out node, we're inside a combinator
+          # that combinator is our parent, and our height is that 
+          # combinator's height + 1
           myP = destNode.component
           myH = h[destNode.component.id] + 1
         else
           # otherwise, we should have the same parent and height as that 
-          # node's component
+          # (sibling) node's component
           myP = p[destNode.component.id]
           myH = h[destNode.component.id]
 
         if myH > maxHeight
-          max = destNode
           maxParent = myP
           maxHeight = myH
 
