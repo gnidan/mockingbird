@@ -419,28 +419,6 @@ describe 'Components', ->
     expect(parents[sub_b.id]).to.equal b
     expect(parents[sub_a.id]).to.equal sub_b
 
-  describe 'siblings', ->
-    it 'should be components reachable by "out to" or "in/op from" conn.', ->
-      #     __________
-      #    |   ,---.  |
-      #    |  ,-.  |  |
-      #    +-'--o--o--+
-      #    |__________|
-      b = new Combinator
-      a1 = new Applicator
-      a2 = new Applicator
-
-      b.in.to a1.in
-      b.in.to a1.op
-      b.in.to a2.op
-      a1.out.to a2.in
-      a2.out.to b.out
-
-      expect(b.siblings()).to.have.length 0
-      
-      expect(a1.siblings()).to.equal [a2]
-      expect(a2.siblings()).to.equal [a1]
-
   describe 'interior components', ->
     it 'should say applicators have 0 interior components', ->
       expect(@a.immediatelyInteriorComponents()).to.have.length 0
@@ -459,7 +437,8 @@ describe 'Components', ->
       subbox.in.to a1.in
       subbox.in.to a1.op
       
-      subbox.out.to a2.in box.in.to a2.op
+      subbox.out.to a2.in
+      box.in.to a2.op
       a2.out.to box.out
 
       components = box.immediatelyInteriorComponents()
@@ -467,7 +446,7 @@ describe 'Components', ->
       expect(components).to.include subbox
       expect(components).to.include a2
       expect(components).not.to.include a1
-      expect(components).to.have.lenght 2
+      expect(components).to.have.length 2
 
   describe 'beta reduction', ->
     it 'should perform beta-reduction on combinators', ->
