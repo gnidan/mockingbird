@@ -411,7 +411,6 @@ describe 'Components', ->
     sub_b.out.to a.in
     a.out.to b.out
 
-    console.log ''
     parents = b.componentTree()
 
     expect(parents[b.id]).to.equal null
