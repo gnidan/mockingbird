@@ -68,6 +68,18 @@ class Component
   nodes: ->
     _.pick(this, @_nodes)
 
+  fold: (f, acc, seen=[]) ->
+    seen.push this
+    acc = f(this, acc)
+
+    nodes = _.values(@nodes())
+    for node in nodes
+      c = node._from?.component
+      if c? and c not in seen
+        acc = c.fold(f, acc, seen)
+
+    acc
+
   allConnectingNodes: ->
     seen = []
 
@@ -78,21 +90,66 @@ class Component
     seen
 
   components: ->
-    seen = {}
-    allNodes = @allConnectingNodes()
-    for type, node of allNodes
-      if node.component? and node.component.id not of seen
-        seen[node.component.id] = node.component
+    f = (component, acc) ->
+      acc[component.id] = component
+      acc
 
-    seen
+    @fold f, {}
 
-  siblings: ->
+  componentTree: ->
+    # backwards and forwards and backwards and forwards and upside down
+
+    parents = (comp, acc) ->
+      [p, h] = acc
+      if comp.id in p
+        return acc
+
+      maxHeight = 0
+      maxParent = null
+      max = null
+      for destNode in comp.out._to
+        [newP, newH] = parents(destNode.component, [p, h])
+        p = _.defaults(p, newP)
+        h = _.defaults(h, newH)
+
+        if destNode is null
+          myP = null
+          myH = 0
+        else if destNode.type is 'out'
+          myP = destNode.component
+          myH = h[destNode.component.id] + 1
+        else
+          myP = p[destNode.component.id]
+          myH = h[destNode.component.id]
+
+        if myH > maxHeight
+          max = destNode
+          maxParent = myP
+          maxHeight = myH
+
+      p = _.extend(p, _.object([[comp.id, maxParent]]))
+      h = _.extend(h, _.object([[comp.id, maxHeight]]))
+
+      return [p, h]
+
+    [p, h] = @fold(parents, [{}, {}])
+    p
+
+
+  siblings: (seen=[]) ->
+    siblings = []
+    directSiblings = @_directSiblings()
+    for sibling in directSiblings
+      siblings.push sibling
+
+  _directSiblings: ->
     []
 
   terminalComponent: ->
-    for i, c of @components()
-      if c.out._to.length == 0
-        return c
+    if @out._to.length == 0
+      return this
+    else
+      return @out._to[0].component.terminalComponent()
 
   replication: ->
     for type, node of @nodes()
@@ -100,11 +157,22 @@ class Component
       if sourceNode? and sourceNode._to.length > 1
         sourceNode.removeTo node
         Structure.copy(sourceNode.component).out.to node
-          
         return {
           component: this
           type: 'replication'
         }
+
+  reduce: ->
+    results = []
+    result = @reduceOnce()
+    while result?
+      results.push(result)
+      result = result.component.reduceOnce()
+
+    if results.length > 0
+      return results[results.length - 1].component
+    else
+      return this
 
   reduceOnce: ->
     terminalComponent = @terminalComponent()
@@ -120,9 +188,6 @@ class Component
     result = @replication()
     return result if result?
 
-  reduce: ->
-    return this
-  
   newComponent: ->
     return null
 
@@ -154,36 +219,6 @@ class Applicator extends Component
     result = @substitution()
     return result
 
-  reduce: ->
-    leftside = @in._from?.component
-    topside = @op._from?.component
-    if leftside? and topside?
-      leftside.reduce()
-      topside.reduce()
-
-      leftside.out.removeTo(@in)
-      topside.out.removeTo(@op)
-
-      topside.in.from leftside.out
-
-      topside.reduce()
-
-      if @out._to.length > 0
-        for i in [0 .. @out._to.length - 1]
-          if i is 0
-            topside.out.to @out._to[i]
-          else
-            Structure.copy(topside).out.to @out._to[i]
-
-      for to in @out._to
-        @out.removeTo(to)
-
-      delete this
-      return topside
-
-    else
-      return this
-  
   immediatelyInteriorComponents: ->
     []
 
@@ -220,30 +255,6 @@ class Combinator extends Component
     result = @betaReduction()
     return result
 
-  reduce: ->
-    leftside = @in._from?.component
-    if leftside?
-      leftside.reduce()
-
-      leftside.out.removeTo(@in)
-
-      if @in._to.length > 0
-        for i in [0 .. @in._to.length - 1]
-          if i is 0
-            leftside.out.to @in._to[i]
-          else
-            Structure.copy(leftside).out.to @in._to[i]
-
-      outFrom = @out._from
-      outFrom.removeTo(@out)
-
-      outFrom.component.reduce()
-
-      delete this
-      return outFrom.component
-    else
-      return this
-      
 class Structure
   @forFigure: (figure) ->
     structure = {}
@@ -291,16 +302,17 @@ class Structure
         return true
 
   @copy: (figure) ->
+    storedTo = figure.out._to
+    figure.out._to = []
     structure = Structure.forFigure(figure)
     components = figure.components()
-    terminal = figure.terminalComponent()
 
     figureIds = (c.id for i, c of components)
 
-    start = terminal.id
-    map = Structure._setupConnections(start, structure, components)
+    map = Structure._setupConnections(figure.id, structure, components)
 
-    map[terminal.id]
+    figure.out._to = storedTo
+    map[figure.id]
 
   @_setupConnections: (cid, structure, components, map = {}) ->
     componentStructure = structure[cid]

@@ -204,7 +204,7 @@ describe 'Structure', ->
 
     left.out.to right.in
 
-    str = Structure.stringForFigure(left)
+    str = Structure.stringForFigure(right)
 
     expected = "#{left.id}:\n
   in:\n
@@ -278,6 +278,16 @@ describe 'Structure', ->
 
     expect(Structure.match(mockingbird, mockingbird2)).to.be.true
 
+  describe 'copy', ->
+    it 'should treat the original as a terminal component', ->
+      i = makeIdiotBird()
+      w = makeMockingbird()
+      i.out.to w.in
+
+      i2 = Structure.copy(i)
+      components = (c.id for i, c of i2.components())
+      expect(components).to.have.length 1
+
 describe 'Components', ->
   beforeEach ->
     #   _______
@@ -348,6 +358,67 @@ describe 'Components', ->
     expect(newB.out).to.exist
     expect(newB.op).not.to.exist
 
+  describe 'fold', ->
+    it 'should be a DFS over unique components, from terminal back', ->
+      #   __________________
+      #  |                  |
+      #  |     ,---.        |
+      #  |    ,----O-----.  |
+      #  |   ,--------.  |  |
+      # (+--'---------O--O--+)
+      #  |__________________|
+
+      b = new Combinator
+      a1 = new Applicator
+      a2 = new Applicator
+      a3 = new Applicator
+      b.in.to a1.in
+      b.in.to a1.op
+      b.in.to a2.in
+      b.in.to a2.op
+      a1.out.to a3.op
+      a2.out.to a3.in
+      a3.out.to b.out
+
+      f = (component, acc) ->
+        acc.concat([component])
+
+      acc = b.fold(f, [])
+      expect(acc).to.have.length 4
+      expect(acc[0]).to.equal b
+      expect(acc[1]).to.equal a3
+      expect(acc[2]).to.equal a2
+      expect(acc[3]).to.equal a1
+
+  it 'should calculate a tree of longest paths out to a \'throat\'', ->
+    #   ____________________
+    #  |    _________       |
+    #  |   |  ,-.  ,-+---.  |
+    # (+--(+-'--O-'--+)--O--+)
+    #  |   |_________|      |
+    #  |____________________|
+
+    b = new Combinator
+    a = new Applicator #563
+    sub_b = new Combinator #564
+    sub_a = new Applicator #565
+
+    b.in.to sub_b.in
+    sub_b.in.to sub_a.in
+    sub_b.in.to sub_a.op
+    sub_a.out.to sub_b.out
+    sub_a.out.to a.op
+    sub_b.out.to a.in
+    a.out.to b.out
+
+    console.log ''
+    parents = b.componentTree()
+
+    expect(parents[b.id]).to.equal null
+    expect(parents[a.id]).to.equal b
+    expect(parents[sub_b.id]).to.equal b
+    expect(parents[sub_a.id]).to.equal sub_b
+
   describe 'siblings', ->
     it 'should be components reachable by "out to" or "in/op from" conn.', ->
       #     __________
@@ -366,6 +437,7 @@ describe 'Components', ->
       a2.out.to b.out
 
       expect(b.siblings()).to.have.length 0
+      
       expect(a1.siblings()).to.equal [a2]
       expect(a2.siblings()).to.equal [a1]
 
@@ -381,14 +453,13 @@ describe 'Components', ->
 
       box = new Combinator
       subbox = new Combinator
-      a1 = new Combinator
-      a2 = new Combinator
+      a1 = new Applicator
+      a2 = new Applicator
 
       subbox.in.to a1.in
       subbox.in.to a1.op
       
-      subbox.out.to a2.in
-      box.in.to a2.op
+      subbox.out.to a2.in box.in.to a2.op
       a2.out.to box.out
 
       components = box.immediatelyInteriorComponents()
@@ -456,8 +527,8 @@ describe 'Components', ->
 
       left = makeIdiotBird()
       appl = new Applicator
-      left.out.to appl.in
       left.out.to appl.op
+      left.out.to appl.in
 
       result = appl.replication()
 
