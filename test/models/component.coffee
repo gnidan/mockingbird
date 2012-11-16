@@ -358,148 +358,148 @@ describe 'Components', ->
       expect(components).not.to.include a1
       expect(components).to.have.length 2
 
-  describe 'beta reduction', ->
-    it 'should perform beta-reduction on combinators', ->
-      #  ______     _______
-      # |      |   |   ,   |
-      # +------+---+--'o---+
-      # |______|   |_______|
-      #          .
-      #          .
-      #          V
-      #     ______   
-      #    |      | ,--.
-      #    +------+'---o---+
-      #    |______|    
-
-      left = makeIdiotBird()
-
-      right = new Combinator
-      appl = new Applicator
-      right.in.to appl.in
-      right.in.to appl.op
-      appl.out.to right.out
-
-      left.out.to right.in
-      
-      result = right.betaReduction()
-
-      expect(left.out._to).to.include appl.in
-      expect(left.out._to).to.include appl.op
-      expect(left.out._to).to.have.length 2
-
-      expect(appl.in._from).to.equal left.out
-      expect(appl.op._from).to.equal left.out
-
-      expect(appl.out._to).to.have.length 0
-
-      expect(result.component).to.equal appl
-      expect(result.type).to.equal 'beta-reduction'
-
-  describe 'replication', ->
-    it 'should find a split "to," copy the component, and rewire', ->
-      #     ______   
-      #    |      | ,--.
-      #    +------+'---o---+
-      #    |______|    
-      #          .
-      #          .
-      #          V
-      #      ______   
-      #     |      |
-      #     +------+---. 
-      #     |______|   |
-      #     ______     |
-      #    |      |    |
-      #    +------+----o---+
-      #    |______|    
-
-      left = makeIdiotBird()
-      appl = new Applicator
-      left.out.to appl.op
-      left.out.to appl.in
-
-      result = appl.replication()
-
-      inComponent = appl.in._from.component
-      opComponent = appl.op._from.component
-
-      expect(inComponent).not.to.equal opComponent
-      expect(Structure.match(inComponent, opComponent)).to.be.true
-
-      expect(result.component).to.equal appl
-      expect(result.type).to.equal 'replication'
-
-    it 'should copy out specifically the most terminal node connection', ->
-      #     ______   ,---.
-      #    |      | ,-.  |
-      #    +------+'--o--o-+
-      #    |______|    
-      #          .
-      #          .
-      #          V
-      #      ______ 
-      #     |      | 
-      #     +------+-----.
-      #     |______|     |
-      #     ______       |
-      #    |      | ,-.  |
-      #    +------+'--o--o-+
-      #    |______|    
-
-      left = makeIdiotBird()
-      a1 = new Applicator
-      a2 = new Applicator
-      a1.out.to a2.in
-      left.out.to a2.op
-
-      left.out.to a1.op
-      left.out.to a1.in
-
-      a2.replication()
-
-      newIdiot = a2.op._from.component
-      expect(left).to.not.equal newIdiot
-      expect(newIdiot.out._to).to.include a2.op
-      expect(left.out._to).not.to.include a2.op
-      expect(left.out._to).to.have.length 2
-
-  describe 'substitution', ->
-    it 'should substitute the operator for applicators', ->
-      #      ______   
-      #     |      |
-      #     +------+---. 
-      #     |______|   |
-      #     ______     |
-      #    |      |    |
-      #    +------+----o---+
-      #    |______|    
-      #          .
-      #          .
-      #          V
-      #     ______    ______
-      #    |      |  |      |
-      #    +------+--+------+
-      #    |______|  |______|
-
-      operand = makeIdiotBird()
-      operator = makeIdiotBird()
-      appl = new Applicator
-
-      operand.out.to appl.in
-      operator.out.to appl.op
-
-      result = appl.substitution()
-
-      expect(operand.out._to).to.include operator.in
-      expect(operand.out._to).to.have.length 1
-
-      expect(operator.out._to).to.have.length 0
-
-      expect(result.component).to.equal operator
-      expect(result.type).to.equal 'substitution'
-
   describe 'reduction', ->
+    describe 'beta reduction', ->
+      it 'should perform beta-reduction on combinators', ->
+        #  ______     _______
+        # |      |   |   ,   |
+        # +------+---+--'o---+
+        # |______|   |_______|
+        #          .
+        #          .
+        #          V
+        #     ______   
+        #    |      | ,--.
+        #    +------+'---o---+
+        #    |______|    
+
+        left = makeIdiotBird()
+
+        right = new Combinator
+        appl = new Applicator
+        right.in.to appl.in
+        right.in.to appl.op
+        appl.out.to right.out
+
+        left.out.to right.in
+        
+        result = right.betaReduction()
+
+        expect(left.out._to).to.include appl.in
+        expect(left.out._to).to.include appl.op
+        expect(left.out._to).to.have.length 2
+
+        expect(appl.in._from).to.equal left.out
+        expect(appl.op._from).to.equal left.out
+
+        expect(appl.out._to).to.have.length 0
+
+        expect(result.component).to.equal appl
+        expect(result.type).to.equal 'beta-reduction'
+
+    describe 'replication', ->
+      it 'should find a split "to," copy the component, and rewire', ->
+        #     ______   
+        #    |      | ,--.
+        #    +------+'---o---+
+        #    |______|    
+        #          .
+        #          .
+        #          V
+        #      ______   
+        #     |      |
+        #     +------+---. 
+        #     |______|   |
+        #     ______     |
+        #    |      |    |
+        #    +------+----o---+
+        #    |______|    
+
+        left = makeIdiotBird()
+        appl = new Applicator
+        left.out.to appl.op
+        left.out.to appl.in
+
+        result = appl.replication()
+
+        inComponent = appl.in._from.component
+        opComponent = appl.op._from.component
+
+        expect(inComponent).not.to.equal opComponent
+        expect(Structure.match(inComponent, opComponent)).to.be.true
+
+        expect(result.component).to.equal appl
+        expect(result.type).to.equal 'replication'
+
+      it 'should copy out specifically the most terminal node connection', ->
+        #     ______   ,---.
+        #    |      | ,-.  |
+        #    +------+'--o--o-+
+        #    |______|    
+        #          .
+        #          .
+        #          V
+        #      ______ 
+        #     |      | 
+        #     +------+-----.
+        #     |______|     |
+        #     ______       |
+        #    |      | ,-.  |
+        #    +------+'--o--o-+
+        #    |______|    
+
+        left = makeIdiotBird()
+        a1 = new Applicator
+        a2 = new Applicator
+        a1.out.to a2.in
+        left.out.to a2.op
+
+        left.out.to a1.op
+        left.out.to a1.in
+
+        a2.replication()
+
+        newIdiot = a2.op._from.component
+        expect(left).to.not.equal newIdiot
+        expect(newIdiot.out._to).to.include a2.op
+        expect(left.out._to).not.to.include a2.op
+        expect(left.out._to).to.have.length 2
+
+    describe 'substitution', ->
+      it 'should substitute the operator for applicators', ->
+        #      ______   
+        #     |      |
+        #     +------+---. 
+        #     |______|   |
+        #     ______     |
+        #    |      |    |
+        #    +------+----o---+
+        #    |______|    
+        #          .
+        #          .
+        #          V
+        #     ______    ______
+        #    |      |  |      |
+        #    +------+--+------+
+        #    |______|  |______|
+
+        operand = makeIdiotBird()
+        operator = makeIdiotBird()
+        appl = new Applicator
+
+        operand.out.to appl.in
+        operator.out.to appl.op
+
+        result = appl.substitution()
+
+        expect(operand.out._to).to.include operator.in
+        expect(operand.out._to).to.have.length 1
+
+        expect(operator.out._to).to.have.length 0
+
+        expect(result.component).to.equal operator
+        expect(result.type).to.equal 'substitution'
+
     it 'should be (graphically) left associative', ->
       a = makeMockingbird()
       b = makeMockingbird()
