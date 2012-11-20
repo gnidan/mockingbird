@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" 
+    href="application.css" />
+    <script src="application.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf-8">
+      var exports = this,
+          jQuery = require("jqueryify2");
+
+      require.define({"underscore": require.modules["underscore/underscore"]});
+
+      jQuery.ajaxPrefilter(function(options, origionalOptions, jqXHR) {
+        options.xhrFields = {
+          withCredentials: true
+        };
+      });
+
+      jQuery(function(){
+        var App = require("index");
+        exports.app = new App();
+        exports.app.render();
+      });
+    </script>
+  </head>
+
+  <body>
+  </body>
+</html>
