@@ -8,45 +8,6 @@ Combinator = require('models/component').combinator
 Node = require('models/component').node
 Structure = require('models/component').structure
 
-makeIdiotBird = ->
-  #   _______
-  #  |       |
-  #  +-------+
-  #  |_______|
-  #      I
-  
-  i = new Combinator
-  i.in.to i.out
-  i
-
-makeMockingbird = ->
-  #   _______
-  #  |  /-.  |
-  #  +-<--o--+
-  #  |_______|
-  #      w
-  
-  w = new Combinator
-  a = new Applicator
-  w.in.to a.in
-  w.in.to a.op
-  w.out.from a.out
-  w
-
-makeKestrel = ->
-  k = new Combinator
-  box = new Combinator
-  k.in.to box.out
-  box.out.to k.out
-  k
-
-makeKite = ->
-  kite = new Combinator
-  box = new Combinator
-  box.in.to box.out
-  box.out.to kite.out
-  kite
-
 describe 'Nodes', ->
   it 'should connect to other nodes', ->
     #       ,--> n2
@@ -137,7 +98,7 @@ describe 'Structure', ->
     expect(Structure._stringForConnection(connection)).to.equal "<511, out>"
 
   it 'should be able to print the structure in a readable form', ->
-    left = makeIdiotBird()
+    left = test.makeIdiotBird()
 
     right = new Combinator
     appl = new Applicator
@@ -177,11 +138,11 @@ describe 'Structure', ->
     mystery = new Combinator
     mystery.in.to mystery.out
 
-    idiot = makeIdiotBird()
+    idiot = test.makeIdiotBird()
     isIdiot = Structure.match(mystery, idiot)
     expect(isIdiot).to.be.true
 
-    mockingbird = makeMockingbird()
+    mockingbird = test.makeMockingbird()
     isMockingbird = Structure.match(@b, mockingbird)
     expect(isMockingbird).to.be.true
 
@@ -200,19 +161,19 @@ describe 'Structure', ->
     expect(kitesMatch).to.be.true
 
   it 'should find the terminal component', ->
-    i = makeIdiotBird()
-    w = makeMockingbird()
+    i = test.makeIdiotBird()
+    w = test.makeMockingbird()
     i.out.to w.in
 
     terminal = i.terminalComponent()
     expect(terminal).to.equal w
 
   it 'should say a figure has the same structure as itself', ->
-    kite = makeKite()
+    kite = test.makeKite()
     expect(Structure.match(kite, kite)).to.be.true
 
   it "should be able to copy a figure's structure", ->
-    mockingbird = makeMockingbird()
+    mockingbird = test.makeMockingbird()
 
     mockingbird2 = Structure.copy(mockingbird)
 
@@ -223,8 +184,8 @@ describe 'Structure', ->
 
   describe 'copy', ->
     it 'should only copy components reachable by from connections', ->
-      i = makeIdiotBird()
-      w = makeMockingbird()
+      i = test.makeIdiotBird()
+      w = test.makeMockingbird()
       i.out.to w.in
 
       i2 = Structure.copy(i)
@@ -358,6 +319,19 @@ describe 'Components', ->
       expect(components).not.to.include a1
       expect(components).to.have.length 2
 
+    it 'should compose KI and say the I an interior component', ->
+      k = test.makeKestrel()
+      i = test.makeIdiotBird()
+
+      i.out.to k.in
+      result = k.reduceOnce()
+      kite = result.component
+
+      kiteInnards = kite.immediatelyInteriorComponents()
+
+      expect(kiteInnards).to.include i
+      expect(kiteInnards).to.have.length 1
+
   describe 'reduction', ->
     describe 'beta reduction', ->
       it 'should perform beta-reduction on combinators', ->
@@ -373,7 +347,7 @@ describe 'Components', ->
         #    +------+'---o---+
         #    |______|    
 
-        left = makeIdiotBird()
+        left = test.makeIdiotBird()
 
         right = new Combinator
         appl = new Applicator
@@ -397,6 +371,20 @@ describe 'Components', ->
         expect(result.component).to.equal appl
         expect(result.type).to.equal 'beta-reduction'
 
+      it 'should beta-reduce a combinator whose ear comes from another ear', ->
+        b1 = new Combinator
+        b2 = new Combinator
+        b1.in.to b2.in
+        b2.in.to b2.out
+        b2.out.to b1.out
+
+        result = b2.betaReduction()
+        expect(b1.out._to).to.include b1.out
+        expect(b1.out._to).to.have.length 1
+
+        expect(result.component).to.equal b1
+        expect(result.type).to.equal 'beta-reduction'
+
     describe 'replication', ->
       it 'should find a split "to," copy the component, and rewire', ->
         #     ______   
@@ -415,7 +403,7 @@ describe 'Components', ->
         #    +------+----o---+
         #    |______|    
 
-        left = makeIdiotBird()
+        left = test.makeIdiotBird()
         appl = new Applicator
         left.out.to appl.op
         left.out.to appl.in
@@ -448,7 +436,7 @@ describe 'Components', ->
         #    +------+'--o--o-+
         #    |______|    
 
-        left = makeIdiotBird()
+        left = test.makeIdiotBird()
         a1 = new Applicator
         a2 = new Applicator
         a1.out.to a2.in
@@ -483,8 +471,8 @@ describe 'Components', ->
         #    +------+--+------+
         #    |______|  |______|
 
-        operand = makeIdiotBird()
-        operator = makeIdiotBird()
+        operand = test.makeIdiotBird()
+        operator = test.makeIdiotBird()
         appl = new Applicator
 
         operand.out.to appl.in
@@ -501,9 +489,9 @@ describe 'Components', ->
         expect(result.type).to.equal 'substitution'
 
     it 'should be (graphically) left associative', ->
-      a = makeMockingbird()
-      b = makeMockingbird()
-      c = makeMockingbird()
+      a = test.makeMockingbird()
+      b = test.makeMockingbird()
+      c = test.makeMockingbird()
       a.out.to b.in
       b.out.to c.in
 
@@ -514,9 +502,9 @@ describe 'Components', ->
       expect(result.type).to.equal 'beta-reduction'
 
     it 'should reduce III to II', ->
-      i1 = makeIdiotBird()
-      i2 = makeIdiotBird()
-      i3 = makeIdiotBird()
+      i1 = test.makeIdiotBird()
+      i2 = test.makeIdiotBird()
+      i3 = test.makeIdiotBird()
 
       i1.out.to i2.in
       i2.out.to i3.in
@@ -526,49 +514,49 @@ describe 'Components', ->
       expect(result.type).to.equal 'beta-reduction'
 
     it 'should compose I and get itself', ->
-      i = makeIdiotBird()
+      i = test.makeIdiotBird()
 
       result = i.reduce()
 
-      expect(Structure.match(result, makeIdiotBird())).to.be.true
+      expect(Structure.match(result, test.makeIdiotBird())).to.be.true
 
     it 'should compose II and get I', ->
-      i1 = makeIdiotBird()
-      i2 = makeIdiotBird()
+      i1 = test.makeIdiotBird()
+      i2 = test.makeIdiotBird()
 
       i1.out.to i2.in
 
       result = i2.reduce()
-      expect(Structure.match(result, makeIdiotBird())).to.be.true
+      expect(Structure.match(result, test.makeIdiotBird())).to.be.true
 
     it 'should compose wI and get I', ->
-      i = makeIdiotBird()
-      w = makeMockingbird()
+      i = test.makeIdiotBird()
+      w = test.makeMockingbird()
       i.out.to w.in
 
       result = w.reduce()
-      expect(Structure.match(result, makeIdiotBird())).to.be.true
+      expect(Structure.match(result, test.makeIdiotBird())).to.be.true
 
     it 'should compose KI and get Kite', ->
-      k = makeKestrel()
-      i = makeIdiotBird()
+      k = test.makeKestrel()
+      i = test.makeIdiotBird()
       i.out.to k.in
 
       result = k.reduce()
-      expect(Structure.match(result, makeKite())).to.be.true
+      expect(Structure.match(result, test.makeKite())).to.be.true
 
     it 'should compose a (Kite)w and get an I', ->
-      kite = makeKite()
-      w = makeMockingbird()
+      kite = test.makeKite()
+      w = test.makeMockingbird()
       w.out.to kite.in
 
       result = kite.reduce()
-      expect(Structure.match(result, makeIdiotBird())).to.be.true
+      expect(Structure.match(result, test.makeIdiotBird())).to.be.true
 
     it 'should compose (Kw)KI and get a w', ->
-      k = makeKestrel()
-      w = makeMockingbird()
-      ki = makeKite()
+      k = test.makeKestrel()
+      w = test.makeMockingbird()
+      ki = test.makeKite()
 
       w.out.to k.in
       kw = k.reduce()
@@ -576,5 +564,54 @@ describe 'Components', ->
       ki.out.to kw.in
       result = kw.reduce()
 
-      expect(Structure.match(result, makeMockingbird())).to.be.true
+      expect(Structure.match(result, test.makeMockingbird())).to.be.true
 
+  describe 'visitor pattern', ->
+    it 'should accept a visitor and call the appropriate method on it', ->
+      class Visitor
+        constructor: ->
+          @combinatorCalled = 0
+          @applicatorCalled = 0
+
+        visitCombinator: ->
+          @combinatorCalled += 1
+
+        visitApplicator: ->
+          @applicatorCalled += 1
+
+      visitor = new Visitor
+
+      c = new Combinator
+      a = new Applicator
+
+      c.accept(visitor)
+      expect(visitor.combinatorCalled).to.equal 1
+      expect(visitor.applicatorCalled).to.equal 0
+
+      a.accept(visitor)
+      expect(visitor.combinatorCalled).to.equal 1
+      expect(visitor.applicatorCalled).to.equal 1
+
+    it 'should pass any subsequent arguments back to the visitor', ->
+      class Visitor
+        constructor: ->
+          @lastCombinatorCall = null
+          @lastApplicatorCall = null
+
+        visitCombinator: (args...) ->
+          @lastCombinatorCall = args
+        
+        visitApplicator: (args...) ->
+          @lastApplicatorCall = args
+
+
+      visitor = new Visitor
+
+      c = new Combinator
+      a = new Applicator
+
+      c.accept(visitor, 1, 2, 3)
+      expect(visitor.lastCombinatorCall).to.deep.equal [c, 1, 2, 3]
+
+      a.accept(visitor, 3, 2, 1)
+      expect(visitor.lastApplicatorCall).to.deep.equal [a, 3, 2, 1]

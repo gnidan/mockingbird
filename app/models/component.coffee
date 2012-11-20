@@ -48,6 +48,9 @@ class Component
   nodes: ->
     _.pick(this, @_nodes)
 
+  accept: (visitor, args...) ->
+    visitor.visitComponent(this, args...)
+
   fold: (f, acc, seen=[]) ->
     seen.push this
     acc = f(this, acc)
@@ -173,6 +176,9 @@ class Applicator extends Component
   newComponent: ->
     new Applicator
 
+  accept: (visitor, args...) ->
+    visitor.visitApplicator(this, args...)
+
   substitution: ->
     operand = @in._from?.component
     operator = @op._from?.component
@@ -203,6 +209,9 @@ class Combinator extends Component
 
   newComponent: ->
     new Combinator
+
+  accept: (visitor, args...) ->
+    visitor.visitCombinator(this, args...)
 
   betaReduction: ->
     leftside = @in._from?.component
