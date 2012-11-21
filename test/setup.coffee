@@ -32,10 +32,9 @@ module.exports =
 
   makeMockingbird: ->
     #   _______
-    #  |  /-.  |
-    #  +-<--o--+
+    #  |  ,-.  |
+    # (+-'--O--+)
     #  |_______|
-    #      w
     
     w = new Combinator
     a = new Applicator
@@ -57,3 +56,16 @@ module.exports =
     box.in.to box.out
     box.out.to kite.out
     kite
+
+  makeLark: ->
+    lark = new Combinator
+    inner = new Combinator
+    left = new Applicator
+    right = new Applicator
+    lark.in.to right.op
+    inner.in.to left.in
+    inner.in.to left.op
+    left.out.to right.in
+    right.out.to inner.out
+    inner.out.to lark.out
+    lark
