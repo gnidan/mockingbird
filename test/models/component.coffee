@@ -319,6 +319,11 @@ describe 'Components', ->
     it 'should say applicators have 0 interior components', ->
       expect(@a.immediatelyInteriorComponents()).to.have.length 0
 
+    it 'should say empty combinators have an empty list of int. components', ->
+      i = test.makeIdiotBird()
+
+      expect(i.immediatelyInteriorComponents()).to.have.length 0
+
     it 'should calculate immediately interior components', ->
       components = @b.immediatelyInteriorComponents()
       

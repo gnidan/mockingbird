@@ -126,10 +126,7 @@ class Component
     c
 
   immediatelyInteriorComponents: ->
-    components = @components()
-    children = @componentTree()
-
-    children[@id]
+    @componentTree()[@id] or []
 
   terminalComponent: ->
     if @out._to.length == 0
