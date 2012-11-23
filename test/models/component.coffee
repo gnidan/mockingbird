@@ -262,33 +262,58 @@ describe 'Components', ->
       expect(acc[2]).to.equal a2
       expect(acc[3]).to.equal a1
 
-  it 'should calculate a tree of longest paths out to a \'throat\'', ->
-    #   ____________________
-    #  |    _________       |
-    #  |   |  ,-.  ,-+---.  |
-    # (+--(+-'--O-'--+)--O--+)
-    #  |   |_________|      |
-    #  |____________________|
+  describe 'tree', ->
+    it 'should calculate a hash of {component id: children}s', ->
+      #   _______________
+      #  |    _______    |
+      # (+---+----.  |   |
+      #  |  (+----O--+)--+)
+      #  |   |_______|   |
+      #  |_______________|
 
-    b = new Combinator
-    a = new Applicator #563
-    sub_b = new Combinator #564
-    sub_a = new Applicator #565
+      b = new Combinator
+      sub_b = new Combinator
+      a = new Applicator
 
-    b.in.to sub_b.in
-    sub_b.in.to sub_a.in
-    sub_b.in.to sub_a.op
-    sub_a.out.to sub_b.out
-    sub_a.out.to a.op
-    sub_b.out.to a.in
-    a.out.to b.out
+      b.in.to a.op
+      sub_b.in.to a.in
+      a.out.to sub_b.out
+      sub_b.out.to b.out
 
-    parents = b.componentTree()
+      children = b.componentTree()
 
-    expect(parents[b.id]).to.equal null
-    expect(parents[a.id]).to.equal b
-    expect(parents[sub_b.id]).to.equal b
-    expect(parents[sub_a.id]).to.equal sub_b
+      expect(children[b.id]).to.include sub_b
+      expect(children[sub_b.id]).to.include a
+      expect(children[a.id]).to.not.exist
+
+    it 'should consider children to belong strictly to deepest parent in tree', ->
+      #   ____________________
+      #  |    _________       |
+      #  |   |  ,-.  ,-+---.  |
+      # (+--(+-'--O-'--+)--O--+)
+      #  |   |_________|      |
+      #  |____________________|
+
+      b = new Combinator
+      a = new Applicator #563
+      sub_b = new Combinator #564
+      sub_a = new Applicator #565
+
+      b.in.to sub_b.in
+      sub_b.in.to sub_a.in
+      sub_b.in.to sub_a.op
+      sub_a.out.to sub_b.out
+      sub_a.out.to a.op
+      sub_b.out.to a.in
+      a.out.to b.out
+
+      children = b.componentTree()
+
+      expect(children[b.id]).to.include a
+      expect(children[b.id]).to.include sub_b
+      expect(children[b.id]).not.to.include sub_a
+
+      expect(children[sub_b.id]).to.include sub_a
 
   describe 'interior components', ->
     it 'should say applicators have 0 interior components', ->
