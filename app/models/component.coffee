@@ -70,69 +70,77 @@ class Component
 
     @fold f, {}
 
+  @_parentsHeightsChildren = (comp, acc) ->
+    # find parent that will give component its maximum height
+    #   - follows 'to' paths: going forward
+
+    [p, h, c] = acc
+    if comp.id in p
+      return acc
+
+    maxHeight = 0
+    maxParent = null
+    for destNode in comp.out._to
+      [newP, newH, newC] = Component._parentsHeightsChildren(destNode.component,
+        [p, h, c])
+      p = _.defaults(p, newP)
+      h = _.defaults(h, newH)
+      c = _.defaults(c, newC)
+
+      if destNode.type is 'out'
+        # if the destNode is an out node, we're inside a combinator
+        # that combinator is our parent, and our height is that 
+        # combinator's height + 1
+        myP = destNode.component
+        myH = h[destNode.component.id] + 1
+      else
+        # otherwise, we should have the same parent and height as that 
+        # (sibling) node's component
+        myP = p[destNode.component.id]
+        myH = h[destNode.component.id]
+
+      if myH > maxHeight
+        maxParent = myP
+        maxHeight = myH
+
+    p = _.extend(p, _.object([[comp.id, maxParent]]))
+    h = _.extend(h, _.object([[comp.id, maxHeight]]))
+
+    if maxParent?
+      parentsChildren = if maxParent.id of c and comp not in c[maxParent.id]
+        c[maxParent.id].concat([comp])
+      else
+        [comp]
+
+      c = _.defaults(_.object([[maxParent.id, parentsChildren]]), c)
+
+    return [p, h, c]
+
   componentTree: ->
     # backwards and forwards and backwards and forwards and upside down
 
     parentsHeightsChildren = (comp, acc) ->
-      # find parent that will give component its maximum height
-      #   - follows 'to' paths: going forward
-
-      [p, h, c] = acc
-      if comp.id in p
-        return acc
-
-      maxHeight = 0
-      maxParent = null
-      for destNode in comp.out._to
-        [newP, newH, newC] = parentsHeightsChildren(destNode.component,
-          [p, h, c])
-        p = _.defaults(p, newP)
-        h = _.defaults(h, newH)
-        c = _.defaults(c, newC)
-
-        if destNode.type is 'out'
-          # if the destNode is an out node, we're inside a combinator
-          # that combinator is our parent, and our height is that 
-          # combinator's height + 1
-          myP = destNode.component
-          myH = h[destNode.component.id] + 1
-        else
-          # otherwise, we should have the same parent and height as that 
-          # (sibling) node's component
-          myP = p[destNode.component.id]
-          myH = h[destNode.component.id]
-
-        if myH > maxHeight
-          maxParent = myP
-          maxHeight = myH
-
-      p = _.extend(p, _.object([[comp.id, maxParent]]))
-      h = _.extend(h, _.object([[comp.id, maxHeight]]))
-
-      if maxParent?
-        parentsChildren = if maxParent.id of c and comp not in c[maxParent.id]
-          c[maxParent.id].concat([comp])
-        else
-          [comp]
-
-        c = _.defaults(_.object([[maxParent.id, parentsChildren]]), c)
-
-      return [p, h, c]
 
     # this part goes backwards: we'll mostly calculate parents and 
     # heights on the way back, and then fill in the gaps going forward 
     # with parents()
-    [p, h, c] = @fold(parentsHeightsChildren, [{}, {}, {}])
+    [p, h, c] = @fold(Component._parentsHeightsChildren, [{}, {}, {}])
     c
 
   immediatelyInteriorComponents: ->
     @componentTree()[@id] or []
 
+  topLevelComponents: ->
+    if @in._from == null
+      [this]
+    else
+      [this].concat @in._from.component.topLevelComponents()
+
   terminalComponent: ->
     if @out._to.length == 0
-      return this
+      this
     else
-      return @out._to[0].component.terminalComponent()
+      @out._to[0].component.terminalComponent()
 
   replication: ->
     for type, node of @nodes()

@@ -160,6 +160,16 @@ describe 'Structure', ->
     kitesMatch = Structure.match(kite1, kite2)
     expect(kitesMatch).to.be.true
 
+  it 'should find a list of top-level components', ->
+    a = test.makeKestrel()
+    b = test.makeMockingbird()
+    c = test.makeLark()
+
+    a.out.to b.in
+    b.out.to c.in
+
+    expect(c.topLevelComponents()).to.deep.equal [c, b, a]
+
   it 'should find the terminal component', ->
     i = test.makeIdiotBird()
     w = test.makeMockingbird()
