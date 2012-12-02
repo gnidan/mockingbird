@@ -425,6 +425,18 @@ describe 'Components', ->
         expect(result.component).to.equal b1
         expect(result.type).to.equal 'beta-reduction'
 
+      it 'should not beta-reduce internal components (lazy evaluation)', ->
+        w1 = test.makeMockingbird()
+        w2 = test.makeMockingbird()
+
+        w1.out.to w2.in
+
+        omega = new Combinator
+        omega.out.from w2.out
+
+        result = omega.betaReduction()
+        expect(result).not.to.exist
+
     describe 'replication', ->
       it 'should find a split "to," copy the component, and rewire', ->
         #     ______   
