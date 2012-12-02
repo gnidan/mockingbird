@@ -1,17 +1,22 @@
 class Layout
   constructor: (@figure) ->
-    @elements = []
+    @_buildElementTree()
+    @_computeWidths()
 
-  elementTree: () ->
+  _buildElementTree: ->
     terminal = @figure.terminalComponent()
 
-    tree = []
+    @elements = []
     for c in terminal.topLevelComponents()
       el = new Element(c)
       el.populateChildren()
-      tree.push el
+      @elements.push el
 
-    tree
+    @elements
+
+  _computeWidths: ->
+    for element in @elements
+      element.computeWidth()
 
 class Element
   constructor: (@component) ->
@@ -24,6 +29,22 @@ class Element
       el.populateChildren()
 
       @children.push el
+
+  computeWidth: ->
+    element = this
+
+    class WidthVisitor
+      visitCombinator: ->
+        # 1 for rhyme
+        # 1 + children widths for rhythm
+        childrenWidths = (child.computeWidth() for child in element.children)
+        1 + childrenWidths.reduce ((t, s) -> t + s), 1
+
+      visitApplicator: ->
+        1
+
+    visitor = new WidthVisitor
+    @width = element.component.accept(visitor)
 
 module.exports =
   layout: Layout

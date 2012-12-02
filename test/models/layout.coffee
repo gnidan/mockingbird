@@ -2,6 +2,7 @@ test = require '../setup'
 expect = require('chai').expect
 
 Combinator = require('models/component').combinator
+Applicator = require('models/component').applicator
 
 Layout = require('models/layout').layout
 Element = require('models/layout').element
@@ -11,7 +12,7 @@ describe 'Layout', ->
     lark = test.makeLark()
 
     layout = new Layout(lark)
-    elTree = layout.elementTree()
+    elTree = layout.elements
 
     # [larkElement]
     #   |
@@ -32,7 +33,7 @@ describe 'Layout', ->
     w.out.to l.in
 
     layout = new Layout(l)
-    elTree = layout.elementTree()
+    elTree = layout.elements
 
     expect(elTree).to.have.length 3
 
@@ -47,3 +48,37 @@ describe 'Layout', ->
 
     expect(l.children).to.have.length 1
     expect(l.children[0].children).to.have.length 2
+
+  it 'should calculate the width of an element', ->
+    i = test.makeIdiotBird()
+    layout = new Layout(i)
+    expect(layout.elements[0].width).to.equal 2
+
+    a = new Applicator
+    layout = new Layout(a)
+    expect(layout.elements[0].width).to.equal 1
+
+    w = test.makeMockingbird()
+    layout = new Layout(w)
+    expect(layout.elements[0].width).to.equal 3
+
+    l = test.makeLark()
+    layout = new Layout(l)
+    expect(layout.elements[0].width).to.equal 6
+
+  it 'should calculate the height of an element', ->
+    i = test.makeIdiotBird()
+    layout = new Layout(i)
+    expect(layout.elements[0].height).to.equal 2
+
+    a = new Applicator
+    layout = new Layout(a)
+    expect(layout.elements[0].height).to.equal 1
+
+    w = test.makeMockingbird()
+    layout = new Layout(w)
+    expect(layout.elements[0].height).to.equal 3
+
+    l = test.makeLark()
+    layout = new Layout(l)
+    expect(layout.elements[0].height).to.equal 6
