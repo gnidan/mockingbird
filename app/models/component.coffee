@@ -129,16 +129,19 @@ class Component
 
   siblings: ->
     [p, h, c] = @fold(Component._parentsHeightsChildren, [{}, {}, {}])
-
+    if p[@id] is null
+      @terminalComponent().topLevelComponentsBefore()
+    else
+      c[p[@id].id]
 
   immediatelyInteriorComponents: ->
     @componentTree()[@id] or []
 
-  topLevelComponents: ->
+  topLevelComponentsBefore: ->
     if @in._from == null
       [this]
     else
-      [this].concat @in._from.component.topLevelComponents()
+      [this].concat @in._from.component.topLevelComponentsBefore()
 
   terminalComponent: ->
     if @out._to.length == 0

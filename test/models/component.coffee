@@ -160,7 +160,7 @@ describe 'Structure', ->
     kitesMatch = Structure.match(kite1, kite2)
     expect(kitesMatch).to.be.true
 
-  it 'should find a list of top-level components', ->
+  it 'should find a list of top-level components before', ->
     a = test.makeKestrel()
     b = test.makeMockingbird()
     c = test.makeLark()
@@ -168,7 +168,17 @@ describe 'Structure', ->
     a.out.to b.in
     b.out.to c.in
 
-    expect(c.topLevelComponents()).to.deep.equal [c, b, a]
+    expect(c.topLevelComponentsBefore()).to.deep.equal [c, b, a]
+
+  it 'should not include components top-level components more terminal', ->
+    a = test.makeKestrel()
+    b = test.makeMockingbird()
+    c = test.makeLark()
+
+    a.out.to b.in
+    b.out.to c.in
+
+    expect(b.topLevelComponentsBefore()).to.deep.equal [b, a]
 
   it 'should find the terminal component', ->
     i = test.makeIdiotBird()
@@ -373,7 +383,7 @@ describe 'Components', ->
       expect(kiteInnards).to.have.length 1
 
   describe 'siblings', ->
-    it 'should find siblings for top-level components, ordered by rightness', ->
+    it 'should find siblings for top-level components, ordered by terminality', ->
       a = test.makeKestrel()
       b = test.makeMockingbird()
       c = test.makeLark()
@@ -382,6 +392,16 @@ describe 'Components', ->
       b.out.to c.in
 
       expect(c.siblings()).to.deep.equal [c, b, a]
+
+    it 'should find the siblings for components that are not terminal', ->
+      a = test.makeKestrel()
+      b = test.makeMockingbird()
+      c = test.makeLark()
+
+      a.out.to b.in
+      b.out.to c.in
+
+      expect(b.siblings()).to.deep.equal [c, b, a]
 
     it 'should find siblings for internal components', ->
       doubleMockingbird = new Combinator
@@ -395,6 +415,7 @@ describe 'Components', ->
       a1.out.to doubleMockingbird.out
 
       expect(a1.siblings()).to.deep.equal [a1, a2]
+
 
   describe 'reduction', ->
     describe 'beta reduction', ->
