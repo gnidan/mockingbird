@@ -51,6 +51,8 @@ class Component
   accept: (visitor, args...) ->
     visitor.visitComponent(this, args...)
 
+  # TODO make f be a method on a component rather than a function whose
+  # first argument is a component
   fold: (f, acc, seen=[]) ->
     seen.push this
     acc = f(this, acc)
@@ -118,8 +120,6 @@ class Component
 
   componentTree: ->
     # backwards and forwards and backwards and forwards and upside down
-
-    parentsHeightsChildren = (comp, acc) ->
 
     # this part goes backwards: we'll mostly calculate parents and 
     # heights on the way back, and then fill in the gaps going forward 
