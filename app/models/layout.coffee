@@ -14,7 +14,11 @@ class Layout
     layout
 
   @_columns: (components) ->
-    columns = (Layout._componentColumn(c) for c in components)
+    columns = []
+    for c in components
+      columns.push (replication = new Column) if c.out._to.length > 1
+      columns.push Layout._componentColumn(c)
+    columns
 
   @_componentColumn: (component) ->
     class ColumnMakingVisitor

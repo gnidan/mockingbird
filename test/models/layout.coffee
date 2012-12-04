@@ -42,7 +42,19 @@ describe 'Layout', ->
     expect(column.layout.columns[1].width).to.equal 1
     expect(column.layout.columns[2].width).to.equal 0
 
-  it 'should have columns for replicators not part of rhymes'
+  it 'should have columns for replicators not part of rhymes', ->
+    a1 = new Applicator
+    a2 = new Applicator
+
+    a2.out.to a1.in
+    a2.out.to a1.op
+
+    layout = new Layout(a1)
+    expect(layout.columns).to.have.length 3
+    expect(layout.columns[0].component).to.equal a1
+    expect(layout.columns[1].component).to.be.null
+    expect(layout.columns[2].component).to.equal a2
+    expect(layout.width).to.equal 3
 
   it 'should have a width', ->
     i = test.makeIdiotBird()
