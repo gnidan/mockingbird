@@ -5,80 +5,51 @@ Combinator = require('models/component').combinator
 Applicator = require('models/component').applicator
 
 Layout = require('models/layout').layout
-Element = require('models/layout').element
 
 describe 'Layout', ->
-  it 'should generate an element tree', ->
-    lark = test.makeLark()
+  it 'should make a column for an applicator', ->
+    a = new Applicator
+    layout = new Layout(a)
+    column = layout._layoutIndividualComponent(a)
 
-    layout = new Layout(lark)
-    elTree = layout.elements
+    expect(column.component).to.equal a
+    expect(column.layout).to.be.null
 
-    # [larkElement]
-    #   |
-    #   '-> [innerElement]
-    #         |
-    #         '-> [leftElement, rightElement]
+  it 'should make a column for a combinator', ->
+    b = new Combinator
+    layout = new Layout(b)
+    column = layout._layoutIndividualComponent(b)
 
-    expect(elTree).to.have.length 1
-    expect(elTree[0].children).to.have.length 1
-    expect(elTree[0].children[0].children).to.have.length 2
+    expect(column.component).to.equal b
+    expect(column.layout).to.not.be.null
 
-  it 'should generate an element tree for multiple connected combinators', ->
-    i = test.makeIdiotBird()
-    w = test.makeMockingbird()
-    l = test.makeLark()
+  it 'should make columns for components with siblings', ->
+    b1 = new Combinator
+    b2 = new Combinator
+    b3 = new Combinator
+    b2.out.to b1.in
+    b3.out.to b2.in
 
-    i.out.to w.in
-    w.out.to l.in
+    layout = new Layout(b1)
+    expect(layout.columns[0].component).to.equal b1
+    expect(layout.columns[1].component).to.equal b2
+    expect(layout.columns[2].component).to.equal b3
+    expect(layout.columns).to.have.length 3
 
-    layout = new Layout(l)
-    elTree = layout.elements
-
-    expect(elTree).to.have.length 3
-
-    l = elTree[0]
-    w = elTree[1]
-    i = elTree[2]
-
-    expect(i.children).to.have.length 0
-
-    expect(w.children).to.have.length 1
-    expect(w.children[0].children).to.have.length 0
-
-    expect(l.children).to.have.length 1
-    expect(l.children[0].children).to.have.length 2
-
-  it 'should calculate the width of an element', ->
+  it 'should have a width', ->
     i = test.makeIdiotBird()
     layout = new Layout(i)
-    expect(layout.elements[0].width).to.equal 2
+    expect(layout.width).to.equal 2
 
     a = new Applicator
     layout = new Layout(a)
-    expect(layout.elements[0].width).to.equal 1
+    expect(layout.width).to.equal 1
 
     w = test.makeMockingbird()
     layout = new Layout(w)
-    expect(layout.elements[0].width).to.equal 3
+    expect(layout.width).to.equal 3
 
     l = test.makeLark()
     layout = new Layout(l)
-    expect(layout.elements[0].width).to.equal 6
+    expect(layout.width).to.equal 6
 
-  it 'should calculate the height of an element', ->
-    i = test.makeIdiotBird()
-    layout = new Layout(i)
-    expect(layout.elements[0].height).to.equal 2
-
-    a = new Applicator
-    layout = new Layout(a)
-    expect(layout.elements[0].height).to.equal 1
-
-    w = test.makeMockingbird()
-    layout = new Layout(w)
-    expect(layout.elements[0].height).to.equal 3
-
-    l = test.makeLark()
-    layout = new Layout(l)
-    expect(layout.elements[0].height).to.equal 6

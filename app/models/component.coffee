@@ -127,6 +127,10 @@ class Component
     [p, h, c] = @fold(Component._parentsHeightsChildren, [{}, {}, {}])
     c
 
+  siblings: ->
+    [p, h, c] = @fold(Component._parentsHeightsChildren, [{}, {}, {}])
+
+
   immediatelyInteriorComponents: ->
     @componentTree()[@id] or []
 

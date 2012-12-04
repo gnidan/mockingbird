@@ -372,6 +372,30 @@ describe 'Components', ->
       expect(kiteInnards).to.include i
       expect(kiteInnards).to.have.length 1
 
+  describe 'siblings', ->
+    it 'should find siblings for top-level components, ordered by rightness', ->
+      a = test.makeKestrel()
+      b = test.makeMockingbird()
+      c = test.makeLark()
+
+      a.out.to b.in
+      b.out.to c.in
+
+      expect(c.siblings()).to.deep.equal [c, b, a]
+
+    it 'should find siblings for internal components', ->
+      doubleMockingbird = new Combinator
+      a1 = new Applicator
+      a2 = new Applicator
+
+      doubleMockingbird.in.to a2.in
+      doubleMockingbird.in.to a2.op
+      doubleMockingbird.in.to a1.op
+      a2.out.to a1.in
+      a1.out.to doubleMockingbird.out
+
+      expect(a1.siblings()).to.deep.equal [a1, a2]
+
   describe 'reduction', ->
     describe 'beta reduction', ->
       it 'should perform beta-reduction on combinators', ->
