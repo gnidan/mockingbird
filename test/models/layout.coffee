@@ -9,32 +9,40 @@ Layout = require('models/layout').layout
 describe 'Layout', ->
   it 'should make a column for an applicator', ->
     a = new Applicator
-    layout = new Layout(a)
-    column = layout._layoutIndividualComponent(a)
+    column = Layout._componentColumn(a)
 
     expect(column.component).to.equal a
+    expect(column.width).to.equal 1
     expect(column.layout).to.be.null
 
-  it 'should make a column for a combinator', ->
+  it 'should make columns for components with siblings', ->
+    a1 = new Applicator
+    a2 = new Applicator
+    a3 = new Applicator
+    a2.out.to a1.in
+    a3.out.to a2.in
+
+    layout = new Layout(a1)
+    expect(layout.columns[0].component).to.equal a1
+    expect(layout.columns[1].component).to.equal a2
+    expect(layout.columns[2].component).to.equal a3
+    expect(layout.columns).to.have.length 3
+    expect(layout.width).to.equal 3
+
+  it 'should make a column for a combinator, with a layout', ->
     b = new Combinator
-    layout = new Layout(b)
-    column = layout._layoutIndividualComponent(b)
+    column = Layout._componentColumn(b)
 
     expect(column.component).to.equal b
     expect(column.layout).to.not.be.null
 
-  it 'should make columns for components with siblings', ->
-    b1 = new Combinator
-    b2 = new Combinator
-    b3 = new Combinator
-    b2.out.to b1.in
-    b3.out.to b2.in
+    # right, rhyme, left
+    expect(column.layout.columns).to.have.length 3
+    expect(column.layout.columns[0].width).to.equal 1
+    expect(column.layout.columns[1].width).to.equal 1
+    expect(column.layout.columns[2].width).to.equal 0
 
-    layout = new Layout(b1)
-    expect(layout.columns[0].component).to.equal b1
-    expect(layout.columns[1].component).to.equal b2
-    expect(layout.columns[2].component).to.equal b3
-    expect(layout.columns).to.have.length 3
+  it 'should have columns for replicators not part of rhymes'
 
   it 'should have a width', ->
     i = test.makeIdiotBird()
