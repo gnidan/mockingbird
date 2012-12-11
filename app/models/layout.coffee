@@ -47,6 +47,21 @@ class Column
   constructor: (@component=null, @layout=null, opts={}) ->
     @width = if opts.width? then opts.width else 1
 
+class ComplexColumn
+  constructor: ->
+    @verticalFill = null
+    @horizontalFill = null
+
+  @layout: (figure) ->
+    root = new ComplexColumn
+    for c in figure.siblings()
+      complexColumn = new ComplexColumn
+      complexColumn.addComponentColumn(c)
+
+      root.addComplexColumn(complexColumn)
+
+    root.layBlocks()
+
 sumColumnWidths = (columns) ->
   _.foldl(columns, ((acc, column) ->
     acc + column.width), 0)
